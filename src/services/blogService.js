@@ -3,23 +3,49 @@
 //define api endpoints
 const blogs = `/api/blogs`
 const login = `/api/login`
+let token = null
+
+const getToken = newToken => {
+    token = `bearer ${newToken}`
+}
 
 const getAll = async () => {
-    const req = await fetch(blogs)
+    const req = await fetch(blogs,{ headers: {'authorization':token}})
+    return req.json()
+}
+
+const createBlog = async blog => {
+    const req = await fetch(blogs, {
+        method: 'POST', 
+        headers: {'Content-Type':'application/json', 'authorization': token},
+        body: JSON.stringify(blog)
+    })
+
+    if(!req.ok){
+        throw Error
+    }
+
     return req.json()
 }
 
 const loginService = async credentials => {
-    try{
-        const req = await fetch(login, {method:"POST", body: credentials})
-        return req.json()
-    }catch(e){
-        console.log(e)
+    const req = await fetch(login, {
+        method:"POST", 
+        headers: {'Content-Type':'application/json','authorization':token},
+        body: JSON.stringify(credentials)
+    })
+
+    if(!req.ok){
+        throw Error
     }
+
+    return req.json()
 }
 
 
 module.exports = {
     getAll,
-    loginService
+    createBlog,
+    loginService,
+    getToken
 }
