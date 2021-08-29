@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import BlogForm from './components/BlogForm'
 import Blogs from './components/Blogs'
 import LoginForm from './components/Login'
 const blogService = require('./services/blogService')
@@ -6,6 +7,7 @@ const blogService = require('./services/blogService')
 const App = () => {
     const [blogs, setBlogs] = useState([])
     const [errorMessage, setError] = useState(null)
+    const [addMessage, setAddMessage] = useState(null)
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [user, setUser] = useState(null)
@@ -54,7 +56,11 @@ const App = () => {
         e.preventDefault()
         try{
             await blogService.createBlog(blog)
+            setAddMessage(`${blog.title} by ${blog.author} added`)
             setBlog({title:'',author:'',url:''})
+            setTimeout(() => {
+                setAddMessage(null)
+            }, 2000)
         }catch(e){
             console.log('Error', e)
         }
@@ -62,11 +68,12 @@ const App = () => {
         setBlogs(blogsFetched)
     }
 
+    // Handle login functionality for login component
     const handleUsername = (e) => {
         setUsername(e.target.value)
     }
 
-    const handlePassword = e => {
+    const handlePassword = (e) => {
         setPassword(e.target.value)
     }
 
@@ -75,10 +82,21 @@ const App = () => {
         setUser(null)
     }
 
+    // handle blog creation functionality for blog component
+    const handleBlogTitle = (e) => {
+        setBlog({...blog, title: e.target.value})
+    }
+    const handleBlogAuthor = (e) => {
+        setBlog({...blog, author: e.target.value})
+    }
+    const handleBlogUrl = (e) => {
+        setBlog({...blog, url: e.target.value})
+    }
+
     if(user === null){
         return (
             <div>
-                <h3>{errorMessage}</h3>
+                <h3 style={{color: "red"}} >{errorMessage}</h3>
                 <LoginForm handleLogin={handleLogin} handlePassword={handlePassword}
                     handleUsername={handleUsername} username={username} password={password} />
             </div>
@@ -87,14 +105,11 @@ const App = () => {
 
     return (
         <div>
+            <h3 style={{color:"green"}}>{addMessage}</h3>
             <h1>blogs</h1>
             <p><b>{user.name} logged in! <button onClick={handleLogout}>logout</button></b></p>
-            <form onSubmit={handlePost} >
-                <div>title: <input type="text" value={blog.title} onChange={({target}) => setBlog({...blog, title: target.value})} /></div>
-                <div>author: <input type="text" value={blog.author} onChange={({target}) => setBlog({...blog, author: target.value})} /></div>
-                <div>url: <input type="text" value={blog.url} onChange={({target}) => setBlog({...blog, url: target.value})} /></div>
-                <button type="submit">post</button>
-            </form>
+            <BlogForm handlePost={handlePost} blog={blog} handleBlogTitle={handleBlogTitle}
+                handleBlogAuthor={handleBlogAuthor} handleBlogUrl={handleBlogUrl} />
             {blogs.map(x => <Blogs key={x.id} blogs={x} />)}
         </div>
     )
