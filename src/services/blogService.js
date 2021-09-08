@@ -5,7 +5,8 @@ const blogs = `/api/blogs`
 const login = `/api/login`
 let token = null
 
-const getToken = newToken => {
+
+const getToken = (newToken) => {
     token = `bearer ${newToken}`
 }
 
@@ -14,7 +15,7 @@ const getAll = async () => {
     return req.json()
 }
 
-const createBlog = async blog => {
+const createBlog = async (blog) => {
     const req = await fetch(blogs, {
         method: 'POST', 
         headers: {'Content-Type':'application/json', 'authorization': token},
@@ -28,7 +29,20 @@ const createBlog = async blog => {
     return req.json()
 }
 
-const loginService = async credentials => {
+const updateLikes = async (id, blog) => {
+    const req = await fetch(`${blogs}/${id}`,{
+        method: 'PUT',
+        headers: {'Content-Type':'application/json', 'authorization': token},
+        body: JSON.stringify(blog)
+    })
+
+    if(!req.ok){
+        throw Error
+    }
+    return req.json()
+}
+
+const loginService = async (credentials) => {
     const req = await fetch(login, {
         method:"POST", 
         headers: {'Content-Type':'application/json','authorization':token},
@@ -46,6 +60,7 @@ const loginService = async credentials => {
 module.exports = {
     getAll,
     createBlog,
+    updateLikes,
     loginService,
     getToken
 }

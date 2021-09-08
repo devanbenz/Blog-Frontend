@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import BlogForm from './components/BlogForm'
 import Blogs from './components/Blogs'
 import LoginForm from './components/Login'
+import Togglable from './components/Togglable'
 const blogService = require('./services/blogService')
 
 const App = () => {
@@ -11,9 +12,8 @@ const App = () => {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [user, setUser] = useState(null)
-    const [blog, setBlog] = useState({
-        title: '', author: '', url: ''
-    })
+
+    const blogFormRef = useRef()
 
     useEffect(() => {
         (async () => {
@@ -52,20 +52,35 @@ const App = () => {
         }
     }
 
-    const handlePost = async (e) => {
-        e.preventDefault()
+    const handlePost = async (blogObj) => {
+        // Toggle form to not visible after posting
+        blogFormRef.current.toggleVisibility()
         try{
-            await blogService.createBlog(blog)
-            setAddMessage(`${blog.title} by ${blog.author} added`)
-            setBlog({title:'',author:'',url:''})
+            await blogService.createBlog(blogObj)
+            setAddMessage(`${blogObj.title} by ${blogObj.author} added`)
+            const blogsFetched = await blogService.getAll()
+            setBlogs(blogsFetched)
             setTimeout(() => {
                 setAddMessage(null)
             }, 2000)
         }catch(e){
-            console.log('Error', e)
+            setError(e)
         }
-        const blogsFetched = await blogService.getAll()
-        setBlogs(blogsFetched)
+    }
+
+    const updateLikes = async (blogObj) => {
+        try{
+            blogObj = {...blogObj, likes: blogObj.likes++}
+            await blogService.updateLikes(blogObj.id, blogObj)
+            console.log(blogObj)
+            const blogsFetched = await blogService.getAll()
+            setBlogs(blogsFetched)
+        }catch(e){
+            setError(e)
+            setTimeout(()=>{
+                setError(null)
+            },2000)
+        }
     }
 
     // Handle login functionality for login component
@@ -82,35 +97,30 @@ const App = () => {
         setUser(null)
     }
 
-    // handle blog creation functionality for blog component
-    const handleBlogTitle = (e) => {
-        setBlog({...blog, title: e.target.value})
-    }
-    const handleBlogAuthor = (e) => {
-        setBlog({...blog, author: e.target.value})
-    }
-    const handleBlogUrl = (e) => {
-        setBlog({...blog, url: e.target.value})
-    }
+
 
     if(user === null){
         return (
             <div>
                 <h3 style={{color: "red"}} >{errorMessage}</h3>
-                <LoginForm handleLogin={handleLogin} handlePassword={handlePassword}
-                    handleUsername={handleUsername} username={username} password={password} />
+                <Togglable buttonlabel='login'>
+                    <LoginForm handleLogin={handleLogin} handlePassword={handlePassword}
+                        handleUsername={handleUsername} username={username} password={password} />
+                </Togglable>
             </div>
         )
     }
 
     return (
         <div>
+            <h3 style={{color: "red"}} >{errorMessage}</h3>
             <h3 style={{color:"green"}}>{addMessage}</h3>
             <h1>blogs</h1>
             <p><b>{user.name} logged in! <button onClick={handleLogout}>logout</button></b></p>
-            <BlogForm handlePost={handlePost} blog={blog} handleBlogTitle={handleBlogTitle}
-                handleBlogAuthor={handleBlogAuthor} handleBlogUrl={handleBlogUrl} />
-            {blogs.map(x => <Blogs key={x.id} blogs={x} />)}
+            <Togglable buttonlabel='create new blog' ref={blogFormRef}>
+                <BlogForm createBlog={handlePost} />
+            </Togglable>
+            {blogs.map(x => <Blogs key={x.id} blogs={x} updateLikes={updateLikes} />)}
         </div>
     )
 }
